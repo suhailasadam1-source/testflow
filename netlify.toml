@@ -1,0 +1,10 @@
+[build]
+  base = "client"
+  command = "npm install --include=dev && npm run build"
+  publish = "dist"
+
+# Send all routes to the React app so client-side routing (/tasks, /login, ...) works on refresh
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
