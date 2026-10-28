@@ -9,7 +9,7 @@ dotenv.config({ path: fileURLToPath(new URL("./.env", import.meta.url)) });
 await connectDB();
 const app = express();
 app.use(cors({
-  origin: "https://testflow-13.netlify.app",
+  origin: "https://testflow-20.netlify.app",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
