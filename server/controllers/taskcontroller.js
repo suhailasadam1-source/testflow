@@ -17,10 +17,15 @@ export const getTasks = async (req, res) => {
     if (status) query.status = status;
     if (priority) query.priority = priority;
 
-    // Only tasks past their deadline and not completed
+    // Deadlines are date-only values, so a task due today is not overdue yet.
     if (overdue === "true") {
-      query.deadline = { $lt: new Date() };
-      query.status = { $ne: "completed" };
+      const tomorrow = new Date();
+      tomorrow.setUTCHours(0, 0, 0, 0);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      query.$and = [
+        { deadline: { $lt: tomorrow } },
+        { status: { $ne: "completed" } },
+      ];
     }
 
     const sortOptions = {
@@ -41,9 +46,10 @@ export const getTasks = async (req, res) => {
 export const getTaskStats = async (req, res) => {
   try {
     const user = req.user._id;
-    const now = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(now.getDate() + 7);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const nextWeek = new Date(today);
+    nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
 
     const [total, todo, inProgress, completed, low, medium, high, overdue, dueSoon] =
       await Promise.all([
@@ -57,12 +63,12 @@ export const getTaskStats = async (req, res) => {
         Task.countDocuments({
           user,
           status: { $ne: "completed" },
-          deadline: { $lt: now },
+          deadline: { $lt: today },
         }),
         Task.countDocuments({
           user,
           status: { $ne: "completed" },
-          deadline: { $gte: now, $lte: nextWeek },
+          deadline: { $gte: today, $lt: nextWeek },
         }),
       ]);
 

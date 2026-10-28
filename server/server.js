@@ -6,7 +6,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import taskRoutes from "./routes/taskroutes.js";
 dotenv.config({ path: fileURLToPath(new URL("./.env", import.meta.url)) });
-connectDB();
+await connectDB();
 const app = express();
 app.use(cors());
 app.use(express.json());

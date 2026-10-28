@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
 import TaskCard from "../components/TaskCard";
 import TaskForm from "../components/TaskForm";
@@ -20,7 +20,7 @@ export default function Tasks() {
   const hasFilters =
     filters.search || filters.status || filters.priority || filters.overdue;
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async (signal) => {
     try {
       const params = {
         search: filters.search,
@@ -29,20 +29,27 @@ export default function Tasks() {
         sort: filters.sort,
         overdue: filters.overdue ? "true" : "",
       };
-      const { data } = await api.get("/tasks", { params });
+      const { data } = await api.get("/tasks", { params, signal });
+      if (signal?.aborted) return;
       setTasks(data);
       setError("");
     } catch (err) {
-      setError(err.response?.data?.message || "Could not load tasks");
+      if (!signal?.aborted) {
+        setError(err.response?.data?.message || "Could not load tasks");
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
-    const timer = setTimeout(fetchTasks, 300);
-    return () => clearTimeout(timer);
-  }, [filters]);
+    const controller = new AbortController();
+    const timer = setTimeout(() => fetchTasks(controller.signal), 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [fetchTasks]);
 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;

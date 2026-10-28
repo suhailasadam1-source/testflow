@@ -8,7 +8,8 @@ export default function TaskCard({ task, onEdit, onDelete }) {
   const overdue =
     task.deadline &&
     task.status !== "completed" &&
-    new Date(task.deadline) < new Date();
+    new Date(task.deadline).toISOString().slice(0, 10) <
+      new Date().toISOString().slice(0, 10);
 
   return (
     <div className="task-card">
