@@ -8,8 +8,15 @@ import taskRoutes from "./routes/taskroutes.js";
 dotenv.config({ path: fileURLToPath(new URL("./.env", import.meta.url)) });
 await connectDB();
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "https://testflow-13.netlify.app",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
 app.use(express.json());
+
 app.use("/api/tasks", taskRoutes);
 app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => {
