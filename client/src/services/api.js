@@ -1,4 +1,3 @@
-import { Toaster } from "react-hot-toast";
 import axios from "axios";
 
 const api = axios.create({
@@ -11,13 +10,5 @@ api.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
-return (
-  <>
-    <Toaster position="top-right" />
-    <Routes>
-      ...keep all your existing routes here...
-    </Routes>
-  </>
-);
 
 export default api;

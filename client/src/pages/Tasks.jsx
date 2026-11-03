@@ -86,23 +86,27 @@ export default function Tasks() {
   };
 
   const handleSave = async (formData) => {
-   if (editingTask) {
-  await api.put("/tasks/" + editingTask._id, formData);
-  toast.success("Task updated");
-} else {
-  await api.post("/tasks", formData);
-  toast.success("Task created");
-}
+    if (editingTask) {
+      await api.put("/tasks/" + editingTask._id, formData);
+      toast.success("Task updated");
+    } else {
+      await api.post("/tasks", formData);
+      toast.success("Task created");
+    }
+
+    closeForm();
+    await fetchTasks();
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this task?")) return;
     try {
       await api.delete("/tasks/" + id);
-      setTasks(tasks.filter((t) => t._id !== id));
+      setTasks((currentTasks) => currentTasks.filter((task) => task._id !== id));
+      toast.success("Task deleted");
     } catch (err) {
       setError(err.response?.data?.message || "Could not delete task");
     }
-    await api.delete("/tasks/" + id);
-toast.success("Task deleted")
   };
 
   return (
