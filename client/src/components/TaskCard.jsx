@@ -1,3 +1,5 @@
+import { Calendar, Flag, Pencil, Trash2 } from "lucide-react";
+
 const statusLabels = {
   todo: "To Do",
   "in-progress": "In Progress",
@@ -5,17 +7,20 @@ const statusLabels = {
 };
 
 export default function TaskCard({ task, onEdit, onDelete }) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
   const overdue =
     task.deadline &&
     task.status !== "completed" &&
-    new Date(task.deadline).toISOString().slice(0, 10) <
-      new Date().toISOString().slice(0, 10);
+    new Date(task.deadline) < today;
 
   return (
-    <div className="task-card">
+    <div className={"task-card priority-border-" + task.priority}>
       <div className="task-top">
         <h3>{task.title}</h3>
-        <span className={"badge priority-" + task.priority}>{task.priority}</span>
+        <span className={"badge priority-" + task.priority}>
+          <Flag size={12} /> {task.priority}
+        </span>
       </div>
 
       {task.description && <p className="task-desc">{task.description}</p>}
@@ -26,15 +31,21 @@ export default function TaskCard({ task, onEdit, onDelete }) {
         </span>
         {task.deadline && (
           <span className={overdue ? "due overdue" : "due"}>
-            Due: {new Date(task.deadline).toLocaleDateString(undefined, { timeZone: "UTC" })}
+            <Calendar size={14} />
+            {new Date(task.deadline).toLocaleDateString(undefined, {
+              timeZone: "UTC",
+            })}
+            {overdue ? " (overdue)" : ""}
           </span>
         )}
       </div>
 
       <div className="task-actions">
-        <button className="btn-small" onClick={() => onEdit(task)}>Edit</button>
+        <button className="btn-small" onClick={() => onEdit(task)}>
+          <Pencil size={14} /> Edit
+        </button>
         <button className="btn-small btn-danger" onClick={() => onDelete(task._id)}>
-          Delete
+          <Trash2 size={14} /> Delete
         </button>
       </div>
     </div>

@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
 import TaskCard from "../components/TaskCard";
 import TaskForm from "../components/TaskForm";
+import toast from "react-hot-toast";
+import { ClipboardList } from "lucide-react";
+
+
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -82,15 +86,13 @@ export default function Tasks() {
   };
 
   const handleSave = async (formData) => {
-    if (editingTask) {
-      await api.put("/tasks/" + editingTask._id, formData);
-    } else {
-      await api.post("/tasks", formData);
-    }
-    closeForm();
-    fetchTasks();
-  };
-
+   if (editingTask) {
+  await api.put("/tasks/" + editingTask._id, formData);
+  toast.success("Task updated");
+} else {
+  await api.post("/tasks", formData);
+  toast.success("Task created");
+}
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this task?")) return;
     try {
@@ -99,6 +101,8 @@ export default function Tasks() {
     } catch (err) {
       setError(err.response?.data?.message || "Could not delete task");
     }
+    await api.delete("/tasks/" + id);
+toast.success("Task deleted")
   };
 
   return (
@@ -148,16 +152,24 @@ export default function Tasks() {
       </div>
 
       {error && <p className="error">{error}</p>}
-
-      {loading ? (
-        <p>Loading...</p>
-      ) : tasks.length === 0 ? (
-        <p className="empty">
-          {hasFilters
-            ? "No tasks match your filters."
-            : "No tasks yet. Create your first one!"}
-        </p>
-      ) : (
+{loading ? (
+  <div className="task-grid">
+    {[1, 2, 3].map((n) => (
+      <div key={n} className="task-card skeleton" />
+    ))}
+  </div>
+) : tasks.length === 0 ? (
+  <div className="empty-state">
+    <ClipboardList size={48} />
+    <h3>{hasFilters ? "No tasks match your filters" : "No tasks yet"}</h3>
+    <p>
+      {hasFilters
+        ? "Try changing or clearing the filters."
+        : "Click + New Task to create your first one."}
+    </p>
+  </div>
+) : (
+  
         <div className="task-grid">
           {tasks.map((task) => (
             <TaskCard
