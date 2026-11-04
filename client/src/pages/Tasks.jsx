@@ -1,11 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { ClipboardList, LayoutGrid, List } from "lucide-react";
 import api from "../services/api";
 import TaskCard from "../components/TaskCard";
 import TaskForm from "../components/TaskForm";
-import toast from "react-hot-toast";
-import { ClipboardList } from "lucide-react";
+import Board from "../components/Board";
 
-
+const statusLabels = {
+  todo: "To Do",
+  "in-progress": "In Progress",
+  completed: "Completed",
+};
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -13,6 +18,7 @@ export default function Tasks() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [view, setView] = useState(localStorage.getItem("view") || "board");
   const [filters, setFilters] = useState({
     search: "",
     status: "",
@@ -24,7 +30,7 @@ export default function Tasks() {
   const hasFilters =
     filters.search || filters.status || filters.priority || filters.overdue;
 
-  const fetchTasks = useCallback(async (signal) => {
+  const fetchTasks = async () => {
     try {
       const params = {
         search: filters.search,
@@ -33,41 +39,33 @@ export default function Tasks() {
         sort: filters.sort,
         overdue: filters.overdue ? "true" : "",
       };
-      const { data } = await api.get("/tasks", { params, signal });
-      if (signal?.aborted) return;
+      const { data } = await api.get("/tasks", { params });
       setTasks(data);
       setError("");
     } catch (err) {
-      if (!signal?.aborted) {
-        setError(err.response?.data?.message || "Could not load tasks");
-      }
+      setError(err.response?.data?.message || "Could not load tasks");
     } finally {
-      if (!signal?.aborted) setLoading(false);
+      setLoading(false);
     }
-  }, [filters]);
+  };
 
   useEffect(() => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => fetchTasks(controller.signal), 300);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [fetchTasks]);
+    const timer = setTimeout(fetchTasks, 300);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  const changeView = (next) => {
+    setView(next);
+    localStorage.setItem("view", next);
+  };
 
   const handleFilterChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFilters({ ...filters, [name]: type === "checkbox" ? checked : value });
+    const { name, value } = e.target;
+    setFilters({ ...filters, [name]: value });
   };
 
   const clearFilters = () => {
-    setFilters({
-      search: "",
-      status: "",
-      priority: "",
-      sort: "newest",
-      overdue: false,
-    });
+    setFilters({ search: "", status: "", priority: "", sort: "newest", overdue: false });
   };
 
   const openCreate = () => {
@@ -93,19 +91,30 @@ export default function Tasks() {
       await api.post("/tasks", formData);
       toast.success("Task created");
     }
-
     closeForm();
-    await fetchTasks();
+    fetchTasks();
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this task?")) return;
     try {
       await api.delete("/tasks/" + id);
-      setTasks((currentTasks) => currentTasks.filter((task) => task._id !== id));
+      setTasks(tasks.filter((t) => t._id !== id));
       toast.success("Task deleted");
     } catch (err) {
       setError(err.response?.data?.message || "Could not delete task");
+    }
+  };
+
+  const handleMove = async (task, status) => {
+    const previous = tasks;
+    setTasks(tasks.map((t) => (t._id === task._id ? { ...t, status } : t)));
+    try {
+      await api.put("/tasks/" + task._id, { status });
+      toast.success(task.title + " moved to " + statusLabels[status]);
+    } catch (err) {
+      setTasks(previous);
+      toast.error("Could not move the task");
     }
   };
 
@@ -113,7 +122,23 @@ export default function Tasks() {
     <div>
       <div className="page-header">
         <h1>My Tasks</h1>
-        <button className="btn" onClick={openCreate}>+ New Task</button>
+        <div className="header-actions">
+          <div className="view-toggle">
+            <button
+              className={view === "board" ? "active" : ""}
+              onClick={() => changeView("board")}
+            >
+              <LayoutGrid size={16} /> Board
+            </button>
+            <button
+              className={view === "list" ? "active" : ""}
+              onClick={() => changeView("list")}
+            >
+              <List size={16} /> List
+            </button>
+          </div>
+          <button className="btn" onClick={openCreate}>+ New Task</button>
+        </div>
       </div>
 
       <div className="filter-bar">
@@ -141,39 +166,57 @@ export default function Tasks() {
           <option value="oldest">Oldest first</option>
           <option value="deadline">By deadline</option>
         </select>
-        <label className="check">
-          <input
-            type="checkbox"
-            name="overdue"
-            checked={filters.overdue}
-            onChange={handleFilterChange}
-          />
-          Overdue only
-        </label>
         {hasFilters && (
           <button className="btn btn-light" onClick={clearFilters}>Clear</button>
         )}
       </div>
 
+      <div className="chips">
+        <button
+          className={"chip" + (filters.priority === "high" ? " active" : "")}
+          onClick={() =>
+            setFilters({
+              ...filters,
+              priority: filters.priority === "high" ? "" : "high",
+            })
+          }
+        >
+          High priority
+        </button>
+        <button
+          className={"chip" + (filters.overdue ? " active" : "")}
+          onClick={() => setFilters({ ...filters, overdue: !filters.overdue })}
+        >
+          Overdue
+        </button>
+      </div>
+
       {error && <p className="error">{error}</p>}
-{loading ? (
-  <div className="task-grid">
-    {[1, 2, 3].map((n) => (
-      <div key={n} className="task-card skeleton" />
-    ))}
-  </div>
-) : tasks.length === 0 ? (
-  <div className="empty-state">
-    <ClipboardList size={48} />
-    <h3>{hasFilters ? "No tasks match your filters" : "No tasks yet"}</h3>
-    <p>
-      {hasFilters
-        ? "Try changing or clearing the filters."
-        : "Click + New Task to create your first one."}
-    </p>
-  </div>
-) : (
-  
+
+      {loading ? (
+        <div className="task-grid">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="task-card skeleton" />
+          ))}
+        </div>
+      ) : tasks.length === 0 ? (
+        <div className="empty-state">
+          <ClipboardList size={48} />
+          <h3>{hasFilters ? "No tasks match your filters" : "No tasks yet"}</h3>
+          <p>
+            {hasFilters
+              ? "Try changing or clearing the filters."
+              : "Click + New Task to create your first one."}
+          </p>
+        </div>
+      ) : view === "board" ? (
+        <Board
+          tasks={tasks}
+          onMove={handleMove}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+        />
+      ) : (
         <div className="task-grid">
           {tasks.map((task) => (
             <TaskCard
