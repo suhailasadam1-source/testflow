@@ -252,3 +252,22 @@ input, select, textarea { background: var(--card); color: var(--text); }
 }
 .icon-btn { background: none; border: none; color: var(--muted); cursor: pointer; display: inline-flex; padding: 4px; }
 .icon-btn:hover { color: var(--primary); }
+/* Projects */
+.project-bar { margin-bottom: 18px; }
+.project-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.project-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+  border-radius: 999px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); cursor: pointer; font-size: 0.9rem;
+}
+.project-chip.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+.project-chip.add { color: var(--primary); border-style: dashed; }
+.chip-count { opacity: 0.7; font-size: 0.8rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.project-actions { display: flex; gap: 8px; margin-top: 10px; }
+.swatches { display: flex; gap: 8px; margin-top: 6px; }
+.swatch { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+.swatch.selected { border-color: var(--text); }
+.project-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); }
+.project-row { margin-bottom: 12px; }
+.project-row-top { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }

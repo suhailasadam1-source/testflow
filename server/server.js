@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import taskRoutes from "./routes/taskroutes.js";
+import projectRoutes from "./routes/ProjectRoutes.js";
 
 dotenv.config({ path: fileURLToPath(new URL("./.env", import.meta.url)) });
 await connectDB();
@@ -41,6 +42,7 @@ app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Taskflow API is running" });
 });
+app.use("/api/projects", projectRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

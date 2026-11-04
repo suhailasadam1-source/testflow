@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { ClipboardList, LayoutGrid, List } from "lucide-react";
 import api from "../services/api";
 import TaskCard from "../components/TaskCard";
 import TaskForm from "../components/TaskForm";
 import Board from "../components/Board";
+import ProjectBar from "../components/ProjectBar";
+import { useProjects } from "../context/ProjectContext";
 
 const statusLabels = {
   todo: "To Do",
@@ -13,6 +15,7 @@ const statusLabels = {
 };
 
 export default function Tasks() {
+  const { selectedProject, refreshProjects } = useProjects();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,9 +33,10 @@ export default function Tasks() {
   const hasFilters =
     filters.search || filters.status || filters.priority || filters.overdue;
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const params = {
+        project: selectedProject,
         search: filters.search,
         status: filters.status,
         priority: filters.priority,
@@ -47,12 +51,12 @@ export default function Tasks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, selectedProject]);
 
   useEffect(() => {
     const timer = setTimeout(fetchTasks, 300);
     return () => clearTimeout(timer);
-  }, [filters]);
+  }, [fetchTasks]);
 
   const changeView = (next) => {
     setView(next);
@@ -93,6 +97,7 @@ export default function Tasks() {
     }
     closeForm();
     fetchTasks();
+    refreshProjects();
   };
 
   const handleDelete = async (id) => {
@@ -101,6 +106,7 @@ export default function Tasks() {
       await api.delete("/tasks/" + id);
       setTasks(tasks.filter((t) => t._id !== id));
       toast.success("Task deleted");
+      refreshProjects();
     } catch (err) {
       setError(err.response?.data?.message || "Could not delete task");
     }
@@ -114,7 +120,7 @@ export default function Tasks() {
       toast.success(task.title + " moved to " + statusLabels[status]);
     } catch (err) {
       setTasks(previous);
-      toast.error("Could not move the task");
+      toast.error(err.response?.data?.message || "Could not move the task");
     }
   };
 
@@ -140,6 +146,7 @@ export default function Tasks() {
           <button className="btn" onClick={openCreate}>+ New Task</button>
         </div>
       </div>
+      <ProjectBar />
 
       <div className="filter-bar">
         <input

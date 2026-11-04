@@ -1,12 +1,18 @@
 import { useState } from "react";
+import { useProjects } from "../context/ProjectContext";
 
 export default function TaskForm({ task, onSave, onClose }) {
+  const { projects, selectedProject } = useProjects();
+  const defaultProject =
+    selectedProject && selectedProject !== "none" ? selectedProject : "";
+
   const [form, setForm] = useState({
     title: task?.title || "",
     description: task?.description || "",
     status: task?.status || "todo",
     priority: task?.priority || "medium",
     deadline: task?.deadline ? task.deadline.slice(0, 10) : "",
+    project: task ? task.project || "" : defaultProject,
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -19,7 +25,11 @@ export default function TaskForm({ task, onSave, onClose }) {
     setError("");
     setSaving(true);
     try {
-      await onSave({ ...form, deadline: form.deadline || null });
+      await onSave({
+        ...form,
+        deadline: form.deadline || null,
+        project: form.project || null,
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Could not save task");
       setSaving(false);
@@ -37,12 +47,20 @@ export default function TaskForm({ task, onSave, onClose }) {
           <input name="title" value={form.title} onChange={handleChange} required />
 
           <label>Description</label>
-                    <textarea
+          <textarea
             name="description"
             rows="3"
             value={form.description}
             onChange={handleChange}
           />
+
+          <label>Project</label>
+          <select name="project" value={form.project} onChange={handleChange}>
+            <option value="">No project</option>
+            {projects.map((p) => (
+              <option key={p._id} value={p._id}>{p.name}</option>
+            ))}
+          </select>
 
           <div className="form-row">
             <div>
