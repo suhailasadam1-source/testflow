@@ -1,0 +1,1 @@
+if (!/[a-z]/.test(password || "")) problems.push("one lowercase letter");

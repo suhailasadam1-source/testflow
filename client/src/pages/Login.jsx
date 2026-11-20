@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const { user, login, resendOtp } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [show, setShow] = useState(false);
@@ -24,21 +24,10 @@ export default function Login() {
       toast.success("Welcome back");
       navigate("/");
     } catch (err) {
-      const data = err.response?.data;
-      if (err.response?.status === 403 && data?.requiresVerification) {
-        try {
-          await resendOtp(data.email);
-        } catch (resendError) {
-          console.log("Code was not resent");
-        }
-        toast("Please verify your email first");
-        navigate("/verify", { state: { email: data.email } });
-      } else {
-        setError(
-          data?.message ||
-            "Cannot reach the server. It may be waking up, so please wait a minute and try again."
-        );
-      }
+      setError(
+        err.response?.data?.message ||
+          "Cannot reach the server. It may be waking up, so please wait a minute and try again."
+      );
     } finally {
       setLoading(false);
     }

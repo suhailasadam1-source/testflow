@@ -34,12 +34,12 @@ export default function AuthLayout({ children }) {
               <CheckCircle2 size={18} /> Projects, deadlines and progress tracking
             </li>
             <li>
-              <ShieldCheck size={18} /> Secure login with email verification
+              <ShieldCheck size={18} /> Secure sign-in and protected projects
             </li>
           </ul>
         </div>
 
-        <p className="auth-foot">© {new Date().getFullYear()} TaskFlow</p>
+        <p className="auth-foot">© TaskFlow</p>
       </aside>
 
       <main className="auth-main">
