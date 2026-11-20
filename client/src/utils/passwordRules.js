@@ -5,3 +5,6 @@ export const getPasswordChecks = (password) => [
   { label: "One number", ok: /[0-9]/.test(password) },
   { label: "One symbol (for example ! @ # $)", ok: /[^A-Za-z0-9]/.test(password) },
 ];
+
+export const isStrongPassword = (password) =>
+  getPasswordChecks(password).every((check) => check.ok);

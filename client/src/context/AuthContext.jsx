@@ -16,9 +16,24 @@ export function AuthProvider({ children }) {
     setUser(userInfo);
   };
 
-  const register = async (name, email, password) => {
-    const { data } = await api.post("/auth/register", { name, email, password });
-    saveSession(data);
+  const register = async (name, email, password, confirmPassword) => {
+    const { data } = await api.post("/auth/register/send-otp", {
+      name,
+      email,
+      password,
+      confirmPassword,
+    });
+    return data;
+  };
+
+  const verifyRegistration = async (email, otp) => {
+    const { data } = await api.post("/auth/register/verify-otp", { email, otp });
+    return data;
+  };
+
+  const resendRegistrationOtp = async (email) => {
+    const { data } = await api.post("/auth/register/resend-otp", { email });
+    return data;
   };
 
   const login = async (email, password) => {
@@ -33,7 +48,9 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, register, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, register, verifyRegistration, resendRegistrationOtp, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
