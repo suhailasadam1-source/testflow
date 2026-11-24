@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyRegistration from "./pages/VerifyRegistration";
 import NotFound from "./pages/NotFound";
+import { Terms, Privacy } from "./pages/Legal";
 
 export default function App() {
   return (
