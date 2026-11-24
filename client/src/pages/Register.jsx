@@ -1,19 +1,13 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import {
-  Check,
-  Circle,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  User,
-  UserPlus,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { getPasswordChecks, isStrongPassword } from "../utils/passwordRules";
+import { isStrongPassword } from "../utils/passwordRules";
+import AuthShell from "../components/auth/AuthShell";
+import PasswordField from "../components/auth/PasswordField";
+import PasswordStrength from "../components/auth/PasswordStrength";
 
-const strengthLabels = ["Too weak", "Weak", "Fair", "Good", "Strong"];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Register() {
   const { user, register } = useAuth();
@@ -24,46 +18,57 @@ export default function Register() {
     password: "",
     confirm: "",
   });
-  const [show, setShow] = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [touched, setTouched] = useState({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const checks = getPasswordChecks(form.password);
-  const passed = checks.filter((c) => c.ok).length;
+  const nameOk = form.name.trim().length >= 2;
+  const emailOk = emailPattern.test(form.email.trim());
   const strong = isStrongPassword(form.password);
   const matches = form.confirm !== "" && form.password === form.confirm;
-  const canSubmit = strong && matches && !loading;
+  const valid = nameOk && emailOk && strong && matches && agree;
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
+  const markTouched = (e) =>
+    setTouched({ ...touched, [e.target.name]: true });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!strong) {
-      setError("Please meet all the password rules");
+    setTouched({
+      name: true,
+      email: true,
+      password: true,
+      confirm: true,
+      agree: true,
+    });
+
+    if (!valid) {
+      setError("Please complete the highlighted fields.");
       return;
     }
-    if (!matches) {
-      setError("The two passwords do not match");
-      return;
-    }
+
     setError("");
     setLoading(true);
     try {
       const data = await register(
-        form.name,
-        form.email,
+        form.name.trim(),
+        form.email.trim(),
         form.password,
         form.confirm
       );
       sessionStorage.setItem("pendingRegistrationEmail", data.email);
       navigate("/verify", {
-        state: { email: data.email, resendAfter: data.resendAfter },
+        state: { email: data.email, channel: data.channel },
       });
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Cannot reach the server. It may be waking up, so please wait a minute and try again."
+          (err.response
+            ? "Unexpected server reply (" + err.response.status + "). Please try again."
+            : "Cannot reach the server. It may be waking up, so please wait a minute and try again.")
       );
     } finally {
       setLoading(false);
@@ -73,108 +78,132 @@ export default function Register() {
   if (user) return <Navigate to="/" replace />;
 
   return (
-    <div className="auth-card">
-      <div className="auth-icon">
-        <UserPlus size={22} />
-      </div>
-      <h1>Create your account</h1>
-      <p className="auth-sub">
-        Join TaskFlow and keep your projects organised in one place.
-      </p>
+    <AuthShell>
+      <header className="tf-head">
+        <h1>Create your workspace</h1>
+        <p>Start organizing your work today.</p>
+      </header>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <div className="tf-alert" role="alert">
+          {error}
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit}>
-        <label>Full name</label>
-        <div className="field">
-          <User size={16} />
-          <input
-            name="name"
-            placeholder="Your name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="tf-field">
+          <label htmlFor="name">Full name</label>
+          <div className="tf-input">
+            <input
+              id="name"
+              name="name"
+              autoComplete="name"
+              placeholder="Your full name"
+              value={form.name}
+              onChange={handleChange}
+              onBlur={markTouched}
+              aria-invalid={touched.name && !nameOk ? true : undefined}
+              aria-describedby="name-error"
+              required
+            />
+          </div>
+          {touched.name && !nameOk && (
+            <p className="tf-error" id="name-error">
+              Enter your full name.
+            </p>
+          )}
         </div>
 
-        <label>Email</label>
-        <div className="field">
-          <Mail size={16} />
-          <input
-            type="email"
-            name="email"
-            placeholder="you@example.com"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
+        <div className="tf-field">
+          <label htmlFor="email">Email address</label>
+          <div className="tf-input">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange}
+              onBlur={markTouched}
+              aria-invalid={touched.email && !emailOk ? true : undefined}
+              aria-describedby="email-error"
+              required
+            />
+          </div>
+          {touched.email && !emailOk && (
+            <p className="tf-error" id="email-error">
+              Enter a valid email address.
+            </p>
+          )}
         </div>
 
-        <label>Password</label>
-        <div className="field pw">
-          <Lock size={16} />
-          <input
-            type={show ? "text" : "password"}
-            name="password"
-            placeholder="Create a strong password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-          <button
-            type="button"
-            className="pw-toggle"
-            aria-label="Show or hide password"
-            onClick={() => setShow(!show)}
-          >
-            {show ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+        <PasswordField
+          id="password"
+          label="Password"
+          placeholder="Create a strong password"
+          autoComplete="new-password"
+          value={form.password}
+          onChange={handleChange}
+          onBlur={markTouched}
+          invalid={touched.password && !strong}
+          describedBy="password-strength"
+        />
+        <PasswordStrength id="password-strength" password={form.password} />
 
-        <div className="pw-meter">
-          <div
-            className={"pw-meter-fill s" + passed}
-            style={{ width: passed * 25 + "%" }}
-          />
-        </div>
-        <div className="pw-strength">
-          <span>Password strength</span>
-          <span className={"lvl s" + passed}>{strengthLabels[passed]}</span>
-        </div>
-        <ul className="pw-rules grid">
-          {checks.map((c) => (
-            <li key={c.label} className={c.ok ? "ok" : "bad"}>
-              {c.ok ? <Check size={14} /> : <Circle size={14} />} {c.label}
-            </li>
-          ))}
-        </ul>
-
-        <label>Confirm password</label>
-        <div className="field">
-          <Lock size={16} />
-          <input
-            type={show ? "text" : "password"}
-            name="confirm"
-            placeholder="Type the password again"
-            value={form.confirm}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <PasswordField
+          id="confirm"
+          label="Confirm password"
+          placeholder="Type the password again"
+          autoComplete="new-password"
+          value={form.confirm}
+          onChange={handleChange}
+          onBlur={markTouched}
+          invalid={touched.confirm && !matches}
+          describedBy="confirm-note"
+        />
         {form.confirm !== "" && (
-          <p className={"match-msg " + (matches ? "ok" : "bad")}>
+          <p
+            id="confirm-note"
+            className={"tf-note " + (matches ? "ok" : "bad")}
+            aria-live="polite"
+          >
             {matches ? "Passwords match" : "Passwords do not match yet"}
           </p>
         )}
 
-        <button type="submit" disabled={!canSubmit}>
-          {loading ? "Sending code..." : "Create account"}
+        <label className="tf-check">
+          <input
+            type="checkbox"
+            checked={agree}
+            onChange={(e) => setAgree(e.target.checked)}
+          />
+          <span>
+            I agree to the{" "}
+            <Link to="/terms" target="_blank" rel="noopener noreferrer">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
+        {touched.agree && !agree && (
+          <p className="tf-error">Please accept the Terms to continue.</p>
+        )}
+
+        <button type="submit" className="tf-btn" disabled={loading}>
+          {loading && <span className="tf-spin" aria-hidden="true" />}
+          <span>{loading ? "Creating account..." : "Create account"}</span>
+          {!loading && <ArrowRight size={16} />}
         </button>
       </form>
 
-      <p className="auth-switch">
+      <p className="tf-switch">
         Already have an account? <Link to="/login">Log in</Link>
       </p>
-    </div>
+    </AuthShell>
   );
 }

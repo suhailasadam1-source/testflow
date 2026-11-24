@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import App from "./App";
 import "./styles/global.css";
 import { ProjectProvider } from "./context/ProjectContext";
+import "./styles/auth.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
