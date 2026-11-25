@@ -14,6 +14,7 @@ const app = express();
 
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  "https://taskflowmanagey.netlify.app",
   "https://taskmanagent.netlify.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
